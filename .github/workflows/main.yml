@@ -1,4 +1,4 @@
-name: Node.js CI/CD Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
@@ -9,40 +9,44 @@ on:
       - main
 
 jobs:
-  build-and-test:
+  # Frontend build, test, and deploy
+  frontend:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v2
-
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
           node-version: '14'
+      - name: Install dependencies (Frontend)
+        run: cd frontend && npm install
+      - name: Run tests (Frontend)
+        run: cd frontend && npm test
 
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Run Tests
-        run: npm test
-
-  deploy:
+  # Backend build, test, and deploy
+  backend:
     runs-on: ubuntu-latest
-    needs: build-and-test
-
+    needs: frontend
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v2
-
-      - name: Set up SSH
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install dependencies (Backend)
+        run: cd backend && npm install
+      - name: Run tests (Backend)
+        run: cd backend && npm test
+      - name: Deploy (Backend)
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PREM_028 }}
+          HOST: ${{ secrets.PREM_028 }}
+          USER: ${{ secrets.PREM_028 }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.PREM_028 }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy to Server
-        run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.USER }}@${{ secrets.HOST }} \
-            "cd /path/to/your/app && git pull && npm install && pm2 restart app"
+          ssh-keyscan -H ${{ secrets.PREM_028 }} >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/id_rsa ${{ secrets.PREM_028 }}@${{ secrets.PREM_028 }} "cd /path/to/backend && git pull && npm install && pm2 restart app"
