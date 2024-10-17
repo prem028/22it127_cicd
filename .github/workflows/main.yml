@@ -3,55 +3,46 @@ name: Node.js CI/CD Pipeline
 on:
   push:
     branches:
-      - main  # Trigger the pipeline on push to the main branch
+      - main
   pull_request:
     branches:
-      - main  # Trigger the pipeline on pull requests targeting the main branch
+      - main
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the code
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      # Setup Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '14'  # Use the Node.js version required for your project
+          node-version: '14'
 
-      # Install dependencies
       - name: Install Dependencies
         run: npm install
 
-      # Run tests (if you have them)
       - name: Run Tests
-        run: npm test  # Make sure you have a test script in package.json
+        run: npm test
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build-and-test  # Ensure this only runs after the build-and-test job succeeds
+    needs: build-and-test
 
     steps:
-      # Checkout code again
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      # Set up SSH for deployment (make sure you set up SSH secrets in GitHub)
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${HOST} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
 
-      # Deploy code to your server (using SSH)
       - name: Deploy to Server
         run: |
-          ssh -i ~/.ssh/id_rsa user@${HOST} "cd /path/to/your/app && git pull && npm install && pm2 restart app"
-        env:
-          HOST: ${{ secrets.HOST }}
-          USER: ${{ secrets.USER }}
+          ssh -i ~/.ssh/id_rsa ${{ secrets.USER }}@${{ secrets.HOST }} \
+            "cd /path/to/your/app && git pull && npm install && pm2 restart app"
